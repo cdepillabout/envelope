@@ -26,7 +26,7 @@ First, we will import some needed modules.
 Let's look at how a success reponse is encoded and decoded.  It is encoded as
 an object with a single member: @\"data\"@.
 
->>> let successEnvelope :: Envelope Text Int = toSuccessEnvelope 3
+>>> let successEnvelope = toSuccessEnvelope 3 :: Envelope Text Int
 >>> C8.putStrLn $ encode successEnvelope
 {"data":3}
 >>> decode "{\"data\":3}" :: Maybe (Envelope Text Int)
@@ -35,11 +35,11 @@ Just (EnvelopeSuccess (Success 3))
 Now lets look at how an error response is encoded and decoded.  It is encoded
 as an object with two members: @\"extra\"@ and @\"error\"@.
 
->>> let errorEnvelope :: Envelope String Int = toErrEnvelope "example error with DB connection"
+>>> let errorEnvelope = toErrEnvelope "DB_ERROR" "there was an error with the database" :: Envelope String Int
 >>> C8.putStrLn $ encode errorEnvelope
-{"extra":null,"error":"example error with DB connection"}
->>> decode "{\"extra\":\"extratest\",\"error\":\"example error with DB connection\"}" :: Maybe (Envelope String Int)
-Just (EnvelopeErr (Err {errErr = "example error with DB connection", errExtra = Just "extratest"}))
+{"extra":"there was an error with the database","error":"DB_ERROR"}
+>>> decode "{\"extra\":\"there was an error with the database\",\"error\":\"DB_ERROR\"}" :: Maybe (Envelope String Int)
+Just (EnvelopeErr (Err {errErr = "DB_ERROR", errExtra = Just "there was an error with the database"}))
 
 The 'Success' and 'Err' types are used within the 'Envelope' type synonym.
 -}
@@ -147,12 +147,19 @@ instance (FromJSON e) => FromJSON (Err e) where
 toSuccessEnvelope :: a -> Envelope e a
 toSuccessEnvelope = EnvelopeSuccess . Success
 
+-- | Wrap an @a@ and an additional message in an error 'Envelope'.
+--
+-- >>> toErrEnvelope "DB_ERROR" "there was an error with the database" :: Envelope String Int
+-- EnvelopeErr (Err {errErr = "DB_ERROR", errExtra = Just "there was an error with the database"})
+toErrEnvelope :: e -> Text -> Envelope e a
+toErrEnvelope e extra = EnvelopeErr . Err e $ Just extra
+
 -- | Wrap an @a@ in an error 'Envelope'.
 --
--- >>> toErrEnvelope "there was an error" :: Envelope String Int
--- EnvelopeErr (Err {errErr = "there was an error", errExtra = Nothing})
-toErrEnvelope :: e -> Envelope e a
-toErrEnvelope e = EnvelopeErr $ Err e Nothing
+-- >>> toErrEnvelope' "DB_ERROR" :: Envelope String Int
+-- EnvelopeErr (Err {errErr = "DB_ERROR", errExtra = Nothing})
+toErrEnvelope' :: e -> Envelope e a
+toErrEnvelope' e = EnvelopeErr $ Err e Nothing
 
 -- | Throw an @'Err e'@ using 'throwError' in a 'Monad' that implements
 -- 'MonadError'.
