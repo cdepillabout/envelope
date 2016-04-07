@@ -11,7 +11,6 @@ License     : BSD-style (see LICENSE file)
 Maintainer  : cdep.illabout@gmail.com
 Stability   : experimental
 Portability : POSIX
-Description : Envelope type used to return responses from a JSON API
 
 This module contains the 'Envelope' type and helper functions. The 'Envelope'
 type can be used to wrap responses from a JSON API.
