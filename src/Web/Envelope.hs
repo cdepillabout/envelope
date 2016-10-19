@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -67,7 +68,8 @@ import Data.Text (Text)
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
 
--- | Main type to be used.  Wrapper around responses from an API, mainly used with a JSON API.
+-- | Main type to be used.  Wrapper around responses from an API, mainly used
+-- with a JSON API.
 --
 -- Type synonym around 'Envelope''.
 type Envelope e a = Envelope' (Err e) (Success a)
@@ -100,10 +102,6 @@ instance (FromJSON e, FromJSON a) => FromJSON (Envelope' e a) where
 newtype Success a = Success a
     deriving (Data, Eq, Generic, Show, Typeable)
 
-instance (ToJSON a) => ToJSON (Success a) where
-    toJSON :: Success a -> Value
-    toJSON (Success a) = object ["data" .= a]
-
 -- | For @'Success' a@, wrap the @a@ in an object with a @\"data\"@ field.
 --
 -- The resulting JSON object will look like this:
@@ -111,6 +109,11 @@ instance (ToJSON a) => ToJSON (Success a) where
 -- @
 --  { \"data\": ... }
 -- @
+instance (ToJSON a) => ToJSON (Success a) where
+    toJSON :: Success a -> Value
+    toJSON (Success a) = object ["data" .= a]
+
+-- | Parse the JSON object produced by the 'ToJSON' instance.
 instance (FromJSON e) => FromJSON (Success e) where
     parseJSON :: Value -> Parser (Success e)
     parseJSON (Object v) = Success <$> v .: "data"
@@ -122,10 +125,6 @@ data Err e = Err { errErr   :: e          -- ^ Actual error information we want 
                  }
     deriving (Data, Eq, Generic, Show, Typeable)
 
-instance (ToJSON e) => ToJSON (Err e) where
-    toJSON :: Err e -> Value
-    toJSON (Err e extra) = object ["error" .= e, "extra" .= extra]
-
 -- | For @'Err' e@, wrap the @e@ in an object with @\"extra\"@ and @\"error\"@ fields.
 --
 -- The resulting JSON object will look like this:
@@ -133,6 +132,11 @@ instance (ToJSON e) => ToJSON (Err e) where
 -- @
 --  { \"extra\": ..., \"error\": .... }
 -- @
+instance (ToJSON e) => ToJSON (Err e) where
+    toJSON :: Err e -> Value
+    toJSON (Err e extra) = object ["error" .= e, "extra" .= extra]
+
+-- | Parse the JSON object produced by the 'ToJSON' instance.
 instance (FromJSON e) => FromJSON (Err e) where
     parseJSON :: Value -> Parser (Err e)
     parseJSON (Object v) = Err <$> v .: "error"
