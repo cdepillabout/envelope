@@ -1,4 +1,4 @@
-.PHONY: build build-haddock clean ghci haddock haddock-server lint repl test watch watch-tests watch-test
+.PHONY: build build-haddock clean ghci haddock haddock-server lint repl test watch watch-haddock watch-test
 all: build
 
 clean:
@@ -16,8 +16,11 @@ watch:
 	stack build --file-watch --fast .
 
 # Watch for changes.
-watch-test: watch-tests
-watch-tests:
+watch-haddock:
+	stack build --haddock --file-watch --fast .
+
+# Watch for changes.
+watch-test:
 	stack test --file-watch --fast .
 
 # Run ghci using stack.
