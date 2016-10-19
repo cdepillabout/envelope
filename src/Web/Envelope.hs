@@ -60,13 +60,20 @@ import Prelude
 import Control.Monad.Except (MonadError, throwError)
 import Control.Applicative ((<|>))
 import Data.Aeson
-    ( (.=), (.:), FromJSON(..), ToJSON(..), Value(..), object )
+       ((.=), (.:), FromJSON(..), ToJSON(..), Value(..), object)
 import Data.Aeson.TH (deriveJSON)
 import Data.Aeson.Types (Parser, typeMismatch)
 import Data.Data (Data)
+import Data.Maybe (maybeToList)
 import Data.Text (Text)
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
+import Web.FormUrlEncoded
+       (FromForm(fromForm), ToForm(toForm), fromEntriesByKey, lookupMaybe,
+        lookupUnique, parseUnique)
+import Web.HttpApiData
+       (FromHttpApiData, ToHttpApiData(toQueryParam))
+import Web.Internal.FormUrlEncoded (Form)
 
 -- | Main type to be used.  Wrapper around responses from an API, mainly used
 -- with a JSON API.
@@ -97,8 +104,32 @@ instance (FromJSON e, FromJSON a) => FromJSON (Envelope' e a) where
               <|> EnvelopeErr     <$> parseJSON v
               <|> typeMismatch "Envelope'" v
 
--- | Newtype wrapper to be able to provide 'ToJSON' and 'FromJSON' instances.
--- Used with 'Envelope'.
+-- | Uses the underlying 'ToForm' instance for both the 'EnvelopeErr' case and
+-- the 'EnvelopeSuccess' case.
+instance (ToForm a, ToForm e) =>
+         ToForm (Envelope' e a) where
+  toForm :: Envelope' e a -> Form
+  toForm (EnvelopeErr err) = toForm err
+  toForm (EnvelopeSuccess succ) = toForm succ
+
+-- | Looks for the key @\"error\"@ in the 'Form'.  If it is found, assume this
+-- form is an @'Err e'@.  If it is not found, assume this 'Form' is an @a@.
+--
+-- __WARNING__: If the @a@ is encoded with a key @\"error\"@, this 'Form' will
+-- be decoded as a 'EnvelopeErr' instead of a 'EnvelopeSuccess'.  This is
+-- probably not what you want.
+instance (FromForm a, FromHttpApiData e) =>
+         FromForm (Envelope' (Err e) a) where
+  fromForm :: Form -> Either Text (Envelope' (Err e) a)
+  fromForm form =
+    case lookupUnique "error" form of
+      -- Key "error" doesn't exist, so assume this is an @a@.
+      Left _ -> EnvelopeSuccess <$> fromForm form
+      -- Key "error exists, so assume this is an @'Err' e@.
+      Right _ -> EnvelopeErr <$> fromForm form
+
+-- | Newtype wrapper to be able to provide specific instances. Used with
+-- 'Envelope'.
 newtype Success a = Success a
     deriving (Data, Eq, Generic, Show, Typeable)
 
@@ -119,7 +150,20 @@ instance (FromJSON e) => FromJSON (Success e) where
     parseJSON (Object v) = Success <$> v .: "data"
     parseJSON invalid    = typeMismatch "Success" invalid
 
--- | Newtype wrapper to be able to provide 'ToJSON' and 'FromJSON' instances.
+-- | Use the 'ToForm' instance of the underlying datatype.
+instance (ToForm a) =>
+         ToForm (Success a) where
+  toForm :: Success a -> Form
+  toForm (Success a) = toForm a
+
+-- | Use the 'FromForm' instance of the underlying datatype.
+instance (FromForm a) =>
+         FromForm (Success a) where
+  fromForm :: Form -> Either Text (Success a)
+  fromForm form = Success <$> fromForm form
+
+-- | Wrapper to add an extra field with info about the error.  Used with
+-- 'Envelope'.
 data Err e = Err { errErr   :: e          -- ^ Actual error information we want to send.
                  , errExtra :: Maybe Text -- ^ Additional error information in plain text.
                  }
@@ -142,6 +186,27 @@ instance (FromJSON e) => FromJSON (Err e) where
     parseJSON (Object v) = Err <$> v .: "error"
                                <*> v .: "extra"
     parseJSON invalid    = typeMismatch "Err" invalid
+
+-- | Just use the 'ToForm' instance of the underlying datatype.
+--
+-- The resulting Form object will look like this:
+--
+-- @
+--  [(\"extra\", ...), (\"error\", ....)]
+-- @
+instance (ToHttpApiData e) =>
+         ToForm (Err e) where
+  toForm :: Err e -> Form
+  toForm (Err err maybeExtra) =
+    fromEntriesByKey
+      [("error" :: Text, [toQueryParam err]), ("extra", maybeToList maybeExtra)]
+
+-- | Parse a form produced by the 'ToForm' instance.  Use 'FromHttpApiData's
+-- 'Web.HttpApiData.parseQueryParam' to parse the @error@ parameter.
+instance (FromHttpApiData e) =>
+         FromForm (Err e) where
+  fromForm :: Form -> Either Text (Err e)
+  fromForm form = Err <$> parseUnique "error" form <*> lookupMaybe "extra" form
 
 -- | Wrap an @a@ in a success 'Envelope'.
 --
