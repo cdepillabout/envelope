@@ -1,5 +1,5 @@
 name:                envelope
-version:             0.1.0.0
+version:             0.2.0.0
 synopsis:            Defines generic 'Envelope' type to wrap reponses from a JSON API.
 description:         Please see README.md
 homepage:            https://github.com/cdepillabout/envelope#readme
