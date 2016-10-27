@@ -45,3 +45,4 @@ Your error type and extra message get wrapped in an object:
     "extra": "there was an error in the database",
     "error": "DB_ERROR"
 }
+```
