@@ -49,6 +49,8 @@ module Web.Envelope
     , Envelope'(..)
     , Success(..)
     , Err(..)
+    , toErr
+    , toErr'
     , throwEnvelopeErr
     , throwEnvelopeErr'
     , toSuccessEnvelope
@@ -207,6 +209,20 @@ instance (FromHttpApiData e) =>
          FromForm (Err e) where
   fromForm :: Form -> Either Text (Err e)
   fromForm form = Err <$> parseUnique "error" form <*> lookupMaybe "extra" form
+
+-- | Smart constructor for 'Err'.
+--
+-- >>> toErr "DB_ERROR" "an error occurred"
+-- Err {errErr = "DB_ERROR", errExtra = Just "an error occurred"}
+toErr :: e -> Text -> Err e
+toErr e extra = Err e (Just extra)
+
+-- | Smart constructor for 'Err' that doesn't use an 'errExtra'.
+--
+-- >>> toErr' "DB_ERROR"
+-- Err {errErr = "DB_ERROR", errExtra = Nothing}
+toErr' :: e -> Err e
+toErr' e = Err e Nothing
 
 -- | Wrap an @a@ in a success 'Envelope'.
 --
