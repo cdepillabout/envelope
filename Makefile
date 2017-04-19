@@ -1,4 +1,4 @@
-.PHONY: build build-haddock clean ghci haddock haddock-server lint repl test watch watch-haddock watch-test
+.PHONY: build build-haddock clean ghci haddock haddock-server lint repl test upload watch watch-haddock watch-test
 all: build
 
 clean:
@@ -41,3 +41,7 @@ lint:
 # In order to run this, you need to have run `make build-haddock`.
 haddock-server:
 	cd "$$(stack path --local-doc-root)" && python -m http.server 8001
+
+# Upload this package to hackage.
+upload:
+	stack upload .
