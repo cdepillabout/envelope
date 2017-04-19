@@ -55,6 +55,7 @@ module Web.Envelope
     , throwEnvelopeErr'
     , toSuccessEnvelope
     , toErrEnvelope
+    , toErrEnvelope'
     ) where
 
 import Prelude
