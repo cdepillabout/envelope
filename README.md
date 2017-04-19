@@ -2,8 +2,11 @@
 Web.Envelope
 ============
 
-[![Hackage](https://img.shields.io/hackage/v/envelope.svg)](https://hackage.haskell.org/package/envelope) [![Build Status](https://secure.travis-ci.org/cdepillabout/envelope.svg)](http://travis-ci.org/cdepillabout/envelope)
-
+[![Build Status](https://secure.travis-ci.org/cdepillabout/envelope.svg)](http://travis-ci.org/cdepillabout/envelope)
+[![Hackage](https://img.shields.io/hackage/v/envelope.svg)](https://hackage.haskell.org/package/envelope)
+[![Stackage LTS](http://stackage.org/package/envelope/badge/lts)](http://stackage.org/lts/package/envelope)
+[![Stackage Nightly](http://stackage.org/package/envelope/badge/nightly)](http://stackage.org/nightly/package/envelope)
+![BSD3 license](https://img.shields.io/badge/license-BSD3-blue.svg)
 
 This module exports an `Envelope` type that can be used to wrap reponses from a JSON REST API.  It provides a successful `Success` response, and a failure `Err` response.
 
