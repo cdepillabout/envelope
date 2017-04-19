@@ -1,5 +1,5 @@
 name:                envelope
-version:             0.2.1.0
+version:             0.2.2.0
 synopsis:            Defines generic 'Envelope' type to wrap reponses from a JSON API.
 description:         Please see README.md
 homepage:            https://github.com/cdepillabout/envelope#readme
@@ -7,7 +7,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Dennis Gosnell
 maintainer:          cdep.illabout@gmail.com
-copyright:           2016 Dennis Gosnell
+copyright:           2016-2017 Dennis Gosnell
 category:            Web
 build-type:          Simple
 extra-source-files:  README.md
